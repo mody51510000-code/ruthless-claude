@@ -107,8 +107,30 @@ test('the progress tool feeds the pane: round pips and a score bar in the squeez
   expect(pixels('idle', 9, { round: 2, score: 7 })).toEqual(pixels('idle', 9))
 })
 
+test('fast mode plays the press machine, and only for a real fast request', async ($, on) => {
+  const modes: string[] = []
+  on('command.register', () => ({ value: { command: 'x' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('store.get', () => ({ value: true }))
+  on('state.set', (_, e: any) => { modes.push(e.value?.value ?? e.value); return { value: { isSet: true } } })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('skill.prompt', (_, e: any) => ({ text: e.text }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+
+  // the skill body alone saying --fast does not count, nor "fast" inside the task
+  await $.skill.prompt({ skill: 'ruthless-claude', text: 'skill body mentions --fast\n\nARGUMENTS: write a fast parser' } as any)
+  expect(modes[modes.length - 1]).toBe('squeeze')
+
+  await $.skill.prompt({ skill: 'ruthless-claude', text: 'skill body mentions --fast\n\nARGUMENTS: اكتب دالة تقرأ التواريخ بسرعة' } as any)
+  expect(modes[modes.length - 1]).toBe('press')
+
+  // the machine drops in, then the plate moves between frames
+  expect(pixels('press', 0)).not.toEqual(pixels('press', 10))
+  expect(pixels('press', 15)).not.toEqual(pixels('press', 17))
+})
+
 test('every frame of every scene encodes to the right size', () => {
-  for (const m of ['idle', 'typing', 'squeeze'] as const) {
+  for (const m of ['idle', 'typing', 'squeeze', 'press'] as const) {
     for (let f = 0; f < 120; f++) {
       expect(pixels(m, f).length).toBe(W * H)
       for (const cols of [20, 33, W]) {

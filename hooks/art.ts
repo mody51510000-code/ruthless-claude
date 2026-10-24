@@ -1,7 +1,7 @@
 // Pixel art for the Ruthless Claude pane. Pure functions: no engine calls.
 // Each terminal cell shows two square pixels stacked ('▀': fg = top, bg = bottom).
 
-export type Mode = 'idle' | 'typing' | 'squeeze'
+export type Mode = 'idle' | 'typing' | 'squeeze' | 'press'
 
 export const W = 40 // pixels wide (= columns), small enough for a narrow pane
 export const H = 28 // pixels tall (= 14 rows)
@@ -348,6 +348,104 @@ function squeezeScene(b: Buf, f: number) {
   }
 }
 
+// ============ press (fast mode) ============
+// intro: a press machine drops from above around Claude and lands with a thud (0.6 s),
+// Ruthless walks in and grabs the crank (0.8 s), then he cranks fast: one press every 0.6 s.
+// The plate flattens Claude, juice runs out a pipe into a cup, and every 2nd press pops a gem.
+const STEEL = 0x6b7280, STEEL_L = 0x9ca3af, STEEL_D = 0x374151
+const PRESS = [0, 3, 5, 6, 4, 1] // plate drop per frame of one press
+const P_INTRO = 14
+function pressScene(b: Buf, f: number) {
+  const dy = f < 6 ? -24 + f * 4 : 0 // the machine falls in
+  const landed = f >= 6
+  const thud = f === 6 || f === 7 ? (f % 2 ? -1 : 1) : 0 // a little shake on landing
+  const t = Math.max(0, f - P_INTRO)
+  const p = t % PRESS.length
+  const n = Math.floor(t / PRESS.length)
+  const d = f >= P_INTRO ? PRESS[p] : 0
+
+  shadow(b, 15, 22)
+
+  // Claude: stands on the floor until the machine lands, then sits on its tray and gets flattened
+  const top = landed ? Math.max(11, 10 + d) : 14
+  const ch = landed ? 20 - top + 1 : 10
+  const flat = top - 11 // 0..5
+  drawChar(b, {
+    x: 20 + thud - (flat >= 3 ? 1 : 0), y: top, w: flat >= 3 ? 14 : 12, h: ch, pal: CLAUDE,
+    eyes: !landed ? (f >= 2 ? 'bulge' : 'open') : d >= 5 ? 'squint' : f < 10 || d >= 3 ? 'bulge' : 'open',
+    bulge: d >= 5 ? 1 : 0, arms: false, legs: !landed,
+  })
+
+  // the machine (everything below moves with dy while it falls)
+  const y0 = dy
+  rect(b, 17, 5 + y0, 2, 21, STEEL); rect(b, 17, 5 + y0, 1, 21, STEEL_L) // left post
+  rect(b, 33, 5 + y0, 2, 21, STEEL); rect(b, 34, 5 + y0, 1, 21, STEEL_D) // right post
+  rect(b, 16, 5 + y0, 20, 2, STEEL); rect(b, 16, 5 + y0, 20, 1, STEEL_L) // top beam
+  const plateTop = 7 + d + y0
+  rect(b, 25, 7 + y0, 2, plateTop - 7 - y0, STEEL_D) // screw rod, shows as the plate drops
+  rect(b, 19, plateTop, 14, 3, STEEL_D); rect(b, 19, plateTop, 14, 1, STEEL_L) // the plate
+  rect(b, 17, 21 + y0, 18, 2, WOOD); rect(b, 17, 21 + y0, 18, 1, WOOD_L) // tray
+  // pipe out of the tray to the cup
+  rect(b, 35, 21 + y0, 3, 1, STEEL)
+  // crank wheel on the left post, the handle turns once per press
+  const wx = 14, wy = 15 + y0
+  const ang = f >= P_INTRO ? (p / PRESS.length) * Math.PI * 2 - Math.PI / 2 : -Math.PI / 2
+  for (let a = 0; a < 32; a++) px(b, wx + Math.cos(a * Math.PI / 16) * 3, wy + Math.sin(a * Math.PI / 16) * 3, STEEL_L) // rim
+  for (const s of [0, Math.PI / 2]) for (let r = -2; r <= 2; r++) px(b, wx + Math.cos(ang + s) * r, wy + Math.sin(ang + s) * r, STEEL) // turning spokes
+  px(b, wx, wy, STEEL_D)
+  const hx = Math.round(wx + Math.cos(ang) * 3), hy = Math.round(wy + Math.sin(ang) * 3)
+
+  // dust puffs on landing
+  if (f >= 6 && f <= 8) {
+    const s = f - 6
+    for (const k of [-1, 1]) { px(b, 26 + k * (11 + s * 2), 24 - s, 0x8b8b8b); px(b, 26 + k * (12 + s * 2), 25 - s, 0x6b6b6b) }
+  }
+
+  // Ruthless walks in from the left and cranks
+  const rx = f < 8 ? -14 : Math.min(0, -14 + (f - 8) * 3)
+  const strain = d >= 5
+  drawChar(b, strain
+    ? { x: rx, y: 15, w: 13, h: 9, pal: RUTHLESS, eyes: 'mad', brow: 2, look: 2, arms: false }
+    : { x: rx, y: 14, w: 12, h: 10, pal: RUTHLESS, eyes: 'mad', brow: 1, look: 2, arms: false })
+  if (f >= 12) { // arm to the handle, fist on it
+    const ax = rx + 12, ay = 18
+    for (let k = 0; k <= 10; k++) {
+      const x = ax + (hx - ax) * k / 10, y = ay + (hy - ay) * k / 10
+      px(b, x, y, RUTHLESS.arm); px(b, x, y + 1, RUTHLESS.D)
+    }
+    rect(b, hx - 1, hy - 1, 3, 3, RUTHLESS.L)
+  } else {
+    px(b, hx, hy, STEEL_L)
+  }
+
+  // the cup under the pipe: fills one level every 2 presses, then a fresh cup
+  const cupX = 35
+  rect(b, cupX, 22, 1, 4, GLASS); rect(b, cupX + 4, 22, 1, 4, GLASS); rect(b, cupX, 25, 5, 1, GLASS)
+  if (f >= P_INTRO) {
+    const level = Math.min(3, Math.floor(n / 2) % 5)
+    if (level > 0) { rect(b, cupX + 1, 25 - level, 3, level, JUICE); rect(b, cupX + 1, 25 - level, 3, 1, JUICE_L) }
+    if (d >= 3) { // juice on the tray, running to the pipe, dripping in
+      rect(b, 22, 20, 9, 1, JUICE)
+      px(b, 37, 22 + (p % 2), JUICE_L)
+    }
+    // squirts out of both sides of Claude while flattened
+    if (d >= 5) for (const k of [-1, 1]) {
+      const sx = 26 + k * (8 + (p - 2)), sy = 17 - (p - 2)
+      if (sx > 18 && sx < 33) { px(b, sx, sy, JUICE); px(b, sx + k, sy + 1, JUICE_L) }
+    }
+    // speed lines by the plate while it slams down
+    if (p >= 1 && p <= 3) for (const x of [21, 30]) rect(b, x, plateTop - 2, 1, 1, 0xd1d5db)
+    // a gem pops out of the top every 2nd press
+    if (n % 2 === 1 && p >= 3) {
+      const gx = 37, gy = 15 - (p - 3) * 3
+      GEM.forEach((row, j) => [...row].forEach((c2, i) => {
+        if (c2 === '.') return
+        px(b, gx - 2 + i, gy + j, c2 === 'W' ? 0xffffff : c2 === 'D' ? GOLD_D : GOLD)
+      }))
+    }
+  }
+}
+
 // ============ encode to Raster cells ============
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 function toBase64(bytes: Uint8Array): string {
@@ -407,9 +505,10 @@ function drawHud(b: Buf, hud: Hud) {
 export function pixels(m: Mode, f: number, hud?: Hud): Int32Array {
   const b = newBuf()
   if (m === 'squeeze') squeezeScene(b, f)
+  else if (m === 'press') pressScene(b, f)
   else if (m === 'typing') typingScene(b, f)
   else idleScene(b, f)
-  if (m === 'squeeze' && hud && hud.round > 0) drawHud(b, hud)
+  if ((m === 'squeeze' || m === 'press') && hud && hud.round > 0) drawHud(b, hud)
   return b
 }
 

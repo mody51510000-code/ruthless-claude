@@ -21,6 +21,8 @@ let mountedCols = 0 // the Raster's width as last drawn; blit must match it
 const sceneFrame = () => tick - modeStart
 const activeAgents = new Set<string>()
 let ruthlessRun = false
+let fastRun = false // fast mode: the press machine instead of the hand squeeze
+const squeezeMode = (): Mode => (fastRun ? 'press' : 'squeeze')
 // the squeeze's progress, reported by the skill through the progress tool after each review
 const hud: Hud = { round: 0, score: 0 }
 const PROGRESS_TOOL = 'mcp__ruthless-claude__progress'
@@ -42,7 +44,7 @@ function stopClock() {
 async function setMode($: any, m: Mode) {
   if (m !== curMode) {
     modeStart = tick
-    if (m === 'squeeze' || m === 'idle') { hud.round = 0; hud.score = 0 } // a fresh squeeze starts empty
+    if (m !== 'typing') { hud.round = 0; hud.score = 0 } // a fresh squeeze starts empty
   }
   curMode = m
   await update($, mode, () => m)
@@ -54,15 +56,20 @@ const HELP = [
   '  /ruthless-claude <task>            a separate reviewer critiques and scores the draft; Claude fixes it, until 9/10 (max 4 rounds)',
   '  /ruthless-claude <task> --compare  also shows the first draft vs the final one, and what improved (uses more tokens)',
   '  /ruthless-claude review [path]     squeezes your existing code (a file, a folder, or your uncommitted changes)',
+  '  /ruthless-claude <task> --fast     3 reviewers at once: fewer rounds, faster, more tokens',
   '  /ruthless-pane                     opens the side pane (it opens by itself when the terminal is wide enough to dock it)',
   '  /ruthless-pane off | on            stop / resume opening the pane by itself',
   '  /ruthless-help                     shows this list again',
   'Saying "Ruthless Claude", "ruthless mode" or "squeeze it" in a prompt usually triggers it too. Best for code and costly tasks; plain Claude is faster and cheaper for quick questions.',
-  'Replies follow your language. بالعربي: اكتب طلبك بالعربي وبيرد عليك بالعربي، واكتب "قارن" في آخر الطلب بدل --compare.',
+  'Replies follow your language. بالعربي: اكتب طلبك بالعربي وبيرد عليك بالعربي، واكتب "قارن" في آخر الطلب بدل --compare، و"بسرعة" بدل --fast.',
 ]
 
 // exact trigger phrases only, so a prompt that merely contains "ruthless" doesn't start the squeeze animation
 const RUTHLESS_WORDS = /ruthless claude|ruthless mode|squeeze it|كلود القاسي|النسخة القاسية|اعصره/i
+// fast mode: --fast anywhere, or "بسرعة" as the last word of the request
+const FAST_WORDS = /--fast\b|(?:^|\s)بسرع[ةه][\s.!؟?]*$/i
+// a skill's prompt text holds the skill body too; only its arguments say what the person asked
+const skillArgs = (text: string) => /ARGUMENTS:([\s\S]*)$/.exec(text)?.[1] ?? ''
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -77,6 +84,7 @@ export const register: Register = on => {
         properties: {
           round: { type: 'integer', minimum: 1, maximum: 4, description: 'the review round just finished (1-4)' },
           score: { type: 'number', minimum: 0, maximum: 10, description: 'the reviewer\'s score for that round' },
+          fast: { type: 'boolean', description: 'true when the run is in fast mode (parallel reviewers)' },
         },
         required: ['round', 'score'],
       },
@@ -115,7 +123,8 @@ export const register: Register = on => {
     const round = Math.max(1, Math.min(4, Math.round(Number(e.round) || 1)))
     const score = Math.max(0, Math.min(10, Number(e.score) || 0))
     ruthlessRun = true
-    if (curMode !== 'squeeze') await setMode($, 'squeeze')
+    if (e.fast === true) fastRun = true
+    if (curMode !== squeezeMode()) await setMode($, squeezeMode())
     hud.round = round
     hud.score = score
     return { result: `Pane updated: round ${round}, score ${score}/10.` }
@@ -126,22 +135,24 @@ export const register: Register = on => {
   on('skill.prompt', async ($, e, next) => {
     if (e.skill.toLowerCase().includes('ruthless')) {
       ruthlessRun = true
-      await setMode($, 'squeeze')
+      if (FAST_WORDS.test(skillArgs(e.text).trim())) fastRun = true
+      await setMode($, squeezeMode())
     }
     return next(e)
   })
 
   on('prompt.submit', async ($, e, next) => {
-    if (RUTHLESS_WORDS.test(e.text)) {
+    if (RUTHLESS_WORDS.test(e.text) || /^\/ruthless-claude\b/.test(e.text)) {
       ruthlessRun = true
-      await setMode($, 'squeeze')
+      if (FAST_WORDS.test(e.text.trim())) fastRun = true
+      await setMode($, squeezeMode())
     }
     return next(e)
   }).catch(($, e, next) => next(e)) // never hold up the person's prompt
 
   on('turn.start', async ($, e, next) => {
     if (e.agentId) activeAgents.add(e.agentId)
-    else await setMode($, ruthlessRun ? 'squeeze' : 'typing')
+    else await setMode($, ruthlessRun ? squeezeMode() : 'typing')
     return next(e)
   })
 
@@ -150,6 +161,7 @@ export const register: Register = on => {
     if (e.agentId) activeAgents.delete(e.agentId)
     if (!e.agentId && activeAgents.size === 0) {
       ruthlessRun = false
+      fastRun = false
       await setMode($, 'idle')
     }
     return result
