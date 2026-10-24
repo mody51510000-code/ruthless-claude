@@ -105,6 +105,18 @@ Repeat the squeeze:
 - Hard limit: **4 rounds**, so it never loops forever.
 - If a round only finds nitpicks, stop — squeezing harder adds nothing.
 
+**Final check (fresh eyes).** A reviewer that stayed on for several rounds can go soft on fixes it asked
+for, or miss what a change broke elsewhere. So when the squeeze ends after **2 or more rounds** with a score
+of 9+, spawn **one new** reviewer (Agent tool, general-purpose, no `model` override, so it runs on the same
+model as you, never a cheaper one) with the same role, the user's original request, the final version of the
+**changed files** (plus anything they call or are called by), and the saved test folder. It reruns the saved
+tests, writes new ones where it suspects a gap, and ends with the Score line. Skip it when the run ended
+after round 1 (that reviewer was already fresh) or ended at the round limit below 9.
+- If it scores 9+ with no [verified] failures: done.
+- If it finds real problems: fix them once, send it only the changes (SendMessage) for a single recheck,
+  and report its last score, whatever it is. No further rounds after that, so it never loops.
+Show it in the squeeze log as its own line: "Final check → N/10 — ...".
+
 **Safety:** test only on temporary copies, sample data or fixtures. Never run a draft that moves, renames,
 deletes or overwrites the user's real files (or touches anything outside a scratch folder) without asking first.
 
