@@ -1,5 +1,16 @@
 {
   "name": "ruthless-claude",
-  "owner": { "name": "mody51510000-code" },
-  "plugins": [{ "name": "ruthless-claude", "source": "./" }]
+  "owner": { "name": "mody51510000-code", "url": "https://github.com/mody51510000-code" },
+  "metadata": {
+    "description": "Ruthless Claude: multi-round self-review for Claude Code, with an animated side pane."
+  },
+  "plugins": [
+    {
+      "name": "ruthless-claude",
+      "source": "./",
+      "description": "A separate reviewer critiques and scores Claude's draft; Claude fixes every point until 9/10 (max 4 rounds). Plus an animated pixel-art side pane.",
+      "version": "0.2.0",
+      "category": "productivity"
+    }
+  ]
 }
