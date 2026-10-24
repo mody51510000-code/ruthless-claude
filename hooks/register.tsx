@@ -52,6 +52,7 @@ async function setMode($: any, m: Mode) {
 
 // shown once after install, and any time with /ruthless-help
 const HELP = [
+  'Heads up: Ruthless Claude is slow on purpose. Each round is a full review with real tests, so a real project can take 30+ minutes and many tokens. Use it when you need to be sure there are no mistakes.',
   'How to use Ruthless Claude:',
   '  /ruthless-claude <task>            a separate reviewer critiques and scores the draft; Claude fixes it, until 9/10 (max 4 rounds)',
   '  /ruthless-claude <task> --compare  also shows the first draft vs the final one, and what improved (uses more tokens)',
@@ -62,6 +63,7 @@ const HELP = [
   '  /ruthless-help                     shows this list again',
   'Saying "Ruthless Claude", "ruthless mode" or "squeeze it" in a prompt usually triggers it too. Best for code and costly tasks; plain Claude is faster and cheaper for quick questions.',
   'Replies follow your language. بالعربي: اكتب طلبك بالعربي وبيرد عليك بالعربي، واكتب "قارن" في آخر الطلب بدل --compare، و"بسرعة" بدل --fast.',
+  'تنبيه: الأداة تاخذ وقت (المشروع الحقيقي ممكن ياخذ نص ساعة أو أكثر). استخدمها بس إذا تبغا تتأكد إن شغلك ما فيه ولا غلط.',
 ]
 
 // exact trigger phrases only, so a prompt that merely contains "ruthless" doesn't start the squeeze animation
