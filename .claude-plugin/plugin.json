@@ -5,5 +5,6 @@
   "author": { "name": "mody51510000-code" },
   "license": "MIT",
   "repository": "https://github.com/mody51510000-code/ruthless-claude",
+  "icon": "./assets/icon.png",
   "types": "./types/index.d.ts"
 }
