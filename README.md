@@ -15,7 +15,7 @@ A pitch-black persona with angry white eyes grabs Claude's draft and squeezes it
 
 <sub>Unofficial community plugin. Not made by or affiliated with Anthropic.</sub>
 
-[Install](#install) · [How it works](#how-it-works) · [Compare mode](#compare-mode) · [Side pane](#the-side-pane) · [Commands](#commands) · [Cost & limits](#cost--limits)
+[Install](#install) · [How it works](#how-it-works) · [Review mode](#review-mode) · [Compare mode](#compare-mode) · [Side pane](#the-side-pane) · [Commands](#commands) · [Cost & limits](#cost--limits)
 
 </div>
 
@@ -72,9 +72,29 @@ flowchart LR
 3. Claude fixes **every** point and the next round begins.
 4. It stops at **9/10**, when only nitpicks are left, or after **4 rounds**, so it never loops forever.
 
-For code, it runs or tests the draft between rounds when it can, **only on temporary copies or sample data**: the skill tells Claude to ask before running anything that would touch your real files.
+### Proof, not guesses
 
-The scores are the reviewer model's judgment, not a test result. Treat them as a signal, not a guarantee.
+For code, the reviewer doesn't just read it. It copies the draft into a temporary folder, writes tests for what you asked and for the edge cases it suspects, and runs them. Every finding is tagged:
+
+- **[verified]**: a test that actually fails, with the command and its output
+- **[opinion]**: something it couldn't test, and why
+
+Any failing [verified] test caps the score at 6, so a draft can't reach 9/10 while a test still fails. The reviewer's tests are kept and rerun every round, and the squeeze log ends with a line like `12/12 tests pass`.
+
+Tests run **only on temporary copies or sample data**: the skill tells Claude to ask before running anything that would touch your real files.
+
+The scores are still the reviewer model's judgment, not an objective grade. Treat them as a signal, not a guarantee.
+
+## Review mode
+
+Already have code? Squeeze it instead of writing something new:
+
+```
+/ruthless-claude review src/parser.ts
+/ruthless-claude review              # your uncommitted changes (git diff)
+```
+
+Round 1 is your existing work, so the first draft step is skipped. Fixes are made as normal edits that you approve one by one. Add `review only` (or "بس راجع") to get the findings and the score without any edits.
 
 ## Compare mode
 
@@ -104,6 +124,8 @@ A small pixel-art pane next to the chat shows what's happening:
 </tr>
 </table>
 
+While squeezing, the top of the pane tracks the run: one square per round (up to 4) and a 10-segment score bar that turns red, yellow, then green as the score climbs.
+
 The pane opens by itself at session start when your terminal is wide enough for Claude Code to dock it beside the chat (about 144 columns). In a narrower terminal it may not dock: run `/ruthless-pane` and it tells you whether there was room. Don't want it? `/ruthless-pane off` stops the auto-open (`/ruthless-pane on` brings it back). It never opens in headless runs (`claude -p`, SDK).
 
 ## Commands
@@ -112,6 +134,7 @@ The pane opens by itself at session start when your terminal is wide enough for 
 | --- | --- |
 | `/ruthless-claude <task>` | Squeeze the task through review rounds until it scores 9/10 (max 4) |
 | `/ruthless-claude <task> --compare` | Same, plus the first draft vs the final one |
+| `/ruthless-claude review [path]` | Squeeze existing code: a file, a folder, or your uncommitted changes |
 | `/ruthless-pane` | Open the side pane |
 | `/ruthless-pane off` / `on` | Stop / resume opening the pane by itself |
 | `/ruthless-help` | Show the guide and all commands |
@@ -133,7 +156,7 @@ Ruthless Claude replies in the language you write in.
 
 <div dir="rtl">
 
-**بالعربي:** اكتب طلبك بالعربي وبيرد عليك بالعربي. تقدر تقول "كلود القاسي" أو "اعصره"، واكتب "قارن" في آخر الطلب بدل `--compare`.
+**بالعربي:** اكتب طلبك بالعربي وبيرد عليك بالعربي. تقدر تقول "كلود القاسي" أو "اعصره"، واكتب "قارن" في آخر الطلب بدل `--compare`. ولمراجعة كود موجود اكتب "راجع" (مثلاً: `/ruthless-claude راجع آخر تعديلاتي`).
 
 </div>
 
