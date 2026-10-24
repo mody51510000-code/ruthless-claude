@@ -4,7 +4,6 @@ declare module 'claude-code' {
   interface PluginState {
     'ruthless-claude': {
       mode: Shaped<Mode>
-      frame: Shaped<number>
     }
   }
 }
