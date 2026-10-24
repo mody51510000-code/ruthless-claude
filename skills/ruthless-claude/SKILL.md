@@ -58,6 +58,8 @@ Repeat the squeeze:
 - If a round only finds nitpicks, stop — squeezing harder adds nothing.
 
 For code: actually run or test it between rounds when possible. Claims Ruthless Claude cannot verify count as weaknesses.
+**Safety:** test only on temporary copies, sample data or fixtures. Never run a draft that moves, renames,
+deletes or overwrites the user's real files (or touches anything outside a scratch folder) without asking first.
 
 ## Step 3 — Deliver
 
@@ -67,13 +69,17 @@ Show the user:
    - Round 1 → 5/10 — missed edge case X, vague explanation
    - Round 2 → 7/10 — fixed X, but slow on large inputs
    - Round 3 → 9/10 — clean
-3. One closing line from Ruthless Claude, cold and short (English: "Squeezed him 3 times. That's all
-   he had." / Arabic: "عصرته ٣ مرات. هذا أفضل ما عنده.").
+3. One closing line from Ruthless Claude, cold and short, with N = the number of fix passes that
+   actually happened (English: "Squeezed him N times. That's all he had." / Arabic: "عصرته N مرات. هذا أفضل ما عنده.").
+
+Scores are the reviewer's judgment, not a test result: never present them as objective.
 
 ## Optional — Compare mode (off by default)
 
-Only when the user's request contains `--compare`, "compare", "show the difference", "قارن", "قارنه"
-or "وريني الفرق". Otherwise skip this section entirely: it costs extra output tokens.
+Only when the request contains `--compare`, or ends with "show the difference", "قارن", "قارنه" or
+"وريني الفرق" as a separate instruction addressed to you. A request that merely uses such a word as part
+of the task ("write a function to compare two dates", "اكتب دالة تقارن تاريخين") does not count. Otherwise skip this section entirely:
+it costs extra output tokens.
 
 Keep the Round 1 draft exactly as base Claude first wrote it (do not edit it afterwards). In Step 3,
 after the squeeze log and before the closing line, add a section titled
