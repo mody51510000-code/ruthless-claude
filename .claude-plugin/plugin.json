@@ -1,6 +1,6 @@
 {
   "name": "ruthless-claude",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Multi-round self-review: a separate reviewer subagent critiques and scores Claude's draft, Claude fixes every point, until 9/10 (max 4 rounds). Plus an animated pixel-art side pane.",
   "author": { "name": "mody51510000-code", "url": "https://github.com/mody51510000-code" },
   "homepage": "https://github.com/mody51510000-code/ruthless-claude",
