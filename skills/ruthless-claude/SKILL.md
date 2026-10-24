@@ -61,7 +61,13 @@ Claude: spawn one subagent (Agent tool, general-purpose) with this role:
 > the behaviour the task asks for and for the edge cases you suspect, and run them there. Never run
 > anything against the user's real files, real data or real services. Report every finding as either
 > **[verified]** (a test or run that fails — give the command and the actual output) or **[opinion]**
-> (could not be tested — say why). Any failing [verified] test caps the score at 6.
+> (could not be tested — say why). Any failing [verified] test caps the score at 6. Keep your tests in
+> that temporary folder so they can be rerun later.
+>
+> **Read only what matters:** skip generated, cache and binary files (`.godot/`, `node_modules/`, build
+> output, lock files, images, audio, models) and files unrelated to the task.
+> **Be brief:** at most 2-3 lines per finding (what, where, fix). Put all minor [opinion] points together
+> in one short list at the end.
 >
 > End with exactly this line: `Score: N/10 — <the single biggest weakness>`
 
@@ -69,13 +75,22 @@ Pass it the user's original request and the current draft (in review mode, the p
 spawning is not possible, or the task is trivial (a greeting, a one-line answer), do the same critique
 yourself, as harshly as the role demands, testing code the same way.
 
+**Save tokens from round 2 on — keep the same reviewer.** Don't spawn a new reviewer each round: it would
+read everything again from scratch. Continue the round-1 reviewer (SendMessage to it) and send it only:
+what changed since its last review (the diff, or the edited parts with their file and line), plus this
+instruction: "Rerun your saved tests on the new version, review only the changes and anything they could
+break, don't re-read files you already read unless they changed, and end with the Score line." Spawn a
+fresh reviewer only if the old one can't be continued, and then give it its predecessor's findings and
+test folder so nothing is redone.
+
 **Fast mode** (only when the request contains `--fast`, or ends with "بسرعة" / "بسرعه" as a separate
 instruction addressed to you, not as part of the task like "a program that runs fast"): spawn **three**
 reviewers in the same message, so they run at the same time, each with the role above plus one focus:
 1. correctness and tests, 2. edge cases, bad input and safety, 3. speed, clarity, and whether it really
 solves what the user asked. Merge their findings (drop duplicates); the round's score is the **lowest** of
 the three. More found per round means fewer rounds: it finishes sooner but costs roughly 2-3× the tokens
-per round. Mention this cost once in the squeeze log.
+per round. Mention this cost once in the squeeze log. From round 2 on, continue the same three
+reviewers the same way (each gets only the changes).
 
 **Report progress:** after each review, if the tool `mcp__ruthless-claude__progress` is available, call it
 with `round` (1-4), the reviewer's `score`, and `fast: true` in fast mode. It only updates the side pane;
