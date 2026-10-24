@@ -15,6 +15,9 @@ A pitch-black persona with angry white eyes grabs Claude's draft and squeezes it
 
 <sub>Unofficial community plugin. Not made by or affiliated with Anthropic.</sub>
 
+> [!IMPORTANT]
+> **It is slow on purpose.** Every round is a full review with real tests, so a run takes many times longer than a normal answer. Fixing a mid-size game took about **35–40 minutes and ~250k tokens**. Use it when you need to be sure your work has no mistakes, not for everyday questions.
+
 [Install](#install) · [How it works](#how-it-works) · [Review mode](#review-mode) · [Fast mode](#fast-mode) · [Compare mode](#compare-mode) · [Side pane](#the-side-pane) · [Commands](#commands) · [Cost & limits](#cost--limits)
 
 </div>
@@ -160,8 +163,9 @@ Saying **"Ruthless Claude"**, **"ruthless mode"** or **"squeeze it"** in a promp
 ## Cost & limits
 
 - **Tokens:** every round adds a review and a rewrite, so a run costs several times a normal answer (rough estimate: 2–5×, depending on how many rounds run). To keep that down, the reviewer from round 1 stays on: later rounds send it only what changed and it reruns its saved tests, instead of a new reviewer reading everything again. It also skips cache and binary files and keeps findings short. Because a reviewer that stays on can go easy on its own requests, a run of 2+ rounds that reaches 9/10 ends with a **final check**: one new reviewer (same model, never a cheaper one) looks at the changed files with fresh eyes and reruns the tests.
+- **Time:** expect minutes, not seconds. A small function takes a few minutes. A real project can take half an hour or more: a review-only pass of a mid-size Godot game took 9–15 minutes, and fixing its bugs through all rounds plus the final check took about 35–40 minutes.
 - **Waiting:** you see nothing until the last round is done, so long tasks take a while to come back.
-- **When to use it:** code, scripts that change files, and anything where a mistake is costly. For quick questions, plain Claude is faster and cheaper.
+- **When to use it:** only when you want to be sure the work has no mistakes: code you're about to ship, scripts that change files, anything where a bug is costly. For quick questions, small edits or trying ideas, plain Claude is much faster and cheaper.
 - **Same model:** the reviewer is another copy of Claude, so both can miss the same mistake. It catches a lot, not everything.
 
 ## Languages
@@ -169,6 +173,8 @@ Saying **"Ruthless Claude"**, **"ruthless mode"** or **"squeeze it"** in a promp
 Ruthless Claude replies in the language you write in.
 
 <div dir="rtl">
+
+**تنبيه:** الأداة تاخذ وقت، لأن كل جولة مراجعة كاملة مع اختبارات حقيقية. تصليح لعبة متوسطة أخذ حوالي 35 إلى 40 دقيقة. استخدمها بس إذا تبغا تتأكد إن مشروعك ما فيه ولا غلط، وللأسئلة العادية استخدم كلود العادي، أسرع وأرخص.
 
 **بالعربي:** اكتب طلبك بالعربي وبيرد عليك بالعربي. تقدر تقول "كلود القاسي" أو "اعصره"، واكتب "قارن" في آخر الطلب بدل `--compare`، و"بسرعة" بدل `--fast`. ولمراجعة كود موجود اكتب "راجع" (مثلاً: `/ruthless-claude راجع آخر تعديلاتي`).
 
