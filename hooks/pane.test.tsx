@@ -53,6 +53,39 @@ test('the guide prints once after install, and /ruthless-help shows it any time'
   expect(r.text).toContain('--compare')
 })
 
+test('a headless session gets no guide and no pane', async ($, on) => {
+  const logs: string[] = []
+  let opened = false
+  on('command.register', () => ({ value: { command: 'x' } }))
+  on('ui.open', () => { opened = true; return { value: { isPlaced: true } } })
+  on('ui.log', (_, e: any) => { logs.push(e.text); return { value: undefined } })
+  on('store.get', () => ({ value: undefined }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: false })
+  expect(logs.length).toBe(0)
+  expect(opened).toBe(false)
+})
+
+test('/ruthless-pane off stops the auto-open, and says so honestly when there is no room', async ($, on) => {
+  let opens = 0
+  let placed = true
+  const store: Record<string, unknown> = { welcomed: true }
+  on('command.register', () => ({ value: { command: 'x' } }))
+  on('ui.open', () => { opens++; return { value: { isPlaced: placed } } })
+  on('store.get', (_, e: any) => ({ value: store[e.key] }))
+  on('store.set', (_, e: any) => { store[e.key] = e.value; return { value: undefined } })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+
+  const off: any = await $.command.run({ command: 'ruthless-pane', args: 'off' } as any)
+  expect(off.text).toContain('no longer')
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  expect(opens).toBe(0)
+
+  placed = false
+  const r: any = await $.command.run({ command: 'ruthless-pane', args: '' } as any)
+  expect(r.text).toContain('Not enough room')
+})
+
 test('every frame of every scene encodes to the right size', () => {
   for (const m of ['idle', 'typing', 'squeeze'] as const) {
     for (let f = 0; f < 120; f++) {
