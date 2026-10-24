@@ -387,15 +387,32 @@ export function encode(b: Buf, cols: number): string {
   return toBase64(new Uint8Array(words.buffer))
 }
 
+// ============ progress HUD (squeeze only) ============
+// top center, so it survives a narrow pane cropping the sides:
+// four pips = review rounds (lit when done), and a 10-segment bar = the latest score
+export type Hud = { round: number; score: number }
+const MAX_ROUNDS = 4
+function drawHud(b: Buf, hud: Hud) {
+  const pipsX = Math.round(W / 2 - (MAX_ROUNDS * 3 - 1) / 2)
+  for (let k = 0; k < MAX_ROUNDS; k++) {
+    rect(b, pipsX + k * 3, 0, 2, 2, k < hud.round ? 0xffffff : 0x2e2e2e)
+  }
+  const score = Math.max(0, Math.min(10, Math.round(hud.score)))
+  const col = score >= 9 ? 0x3fb950 : score >= 6 ? 0xd29922 : 0xe5534b
+  const barX = Math.round(W / 2 - 19 / 2)
+  for (let k = 0; k < 10; k++) rect(b, barX + k * 2, 3, 1, 2, k < score ? col : 0x2a2a2a)
+}
+
 // raw pixels of one frame; f counts frames since the mode began
-export function pixels(m: Mode, f: number): Int32Array {
+export function pixels(m: Mode, f: number, hud?: Hud): Int32Array {
   const b = newBuf()
   if (m === 'squeeze') squeezeScene(b, f)
   else if (m === 'typing') typingScene(b, f)
   else idleScene(b, f)
+  if (m === 'squeeze' && hud && hud.round > 0) drawHud(b, hud)
   return b
 }
 
-export function stage(m: Mode, f: number, cols: number): string {
-  return encode(pixels(m, f), cols)
+export function stage(m: Mode, f: number, cols: number, hud?: Hud): string {
+  return encode(pixels(m, f, hud), cols)
 }

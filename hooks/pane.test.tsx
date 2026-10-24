@@ -86,6 +86,27 @@ test('/ruthless-pane off stops the auto-open, and says so honestly when there is
   expect(r.text).toContain('Not enough room')
 })
 
+test('the progress tool feeds the pane: round pips and a score bar in the squeeze', async ($, on) => {
+  const tools: string[] = []
+  on('command.register', () => ({ value: { command: 'x' } }))
+  on('tool.register', (_, e: any) => { tools.push(e.name); return { value: { tool: 'mcp__ruthless-claude__' + e.name } } })
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('store.get', () => ({ value: true }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  expect(tools).toContain('progress')
+
+  const r: any = await $.tool.call({ tool: 'mcp__ruthless-claude__progress', round: 2, score: 7 } as any)
+  expect(String(r.result)).toContain('round 2')
+
+  // the HUD only draws in the squeeze, and changes the pixels at the top center
+  const plain = pixels('squeeze', 9)
+  const withHud = pixels('squeeze', 9, { round: 2, score: 7 })
+  const lit = (b: Int32Array) => Array.from(b.slice(0, 5 * W)).filter(v => v >= 0).length
+  expect(lit(withHud)).toBeGreaterThan(lit(plain))
+  expect(pixels('idle', 9, { round: 2, score: 7 })).toEqual(pixels('idle', 9))
+})
+
 test('every frame of every scene encodes to the right size', () => {
   for (const m of ['idle', 'typing', 'squeeze'] as const) {
     for (let f = 0; f < 120; f++) {
