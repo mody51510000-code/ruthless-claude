@@ -58,7 +58,7 @@ const RUTHLESS_WORDS = /ruthless claude|ruthless mode|squeeze it|كلود الق
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'ruthless-pane', description: 'Open the Ruthless Claude side pane' })
+    await $.command.register({ name: 'ruthless-pane', description: 'Open the Ruthless Claude side pane (off / on: stop or resume auto-open)' })
     await $.command.register({ name: 'ruthless-help', description: 'How to use Ruthless Claude and all its commands' })
     // headless runs (claude -p, SDK) get no guide, no pane and no animation clock
     if (!e.isInteractive) return next(e)
@@ -75,14 +75,15 @@ export const register: Register = on => {
   // /ruthless-pane         open it now
   // /ruthless-pane off|on  stop / resume opening it by itself at session start
   on('command.run', { command: 'ruthless-pane' }, async ($, e) => {
-    const arg = e.args.trim().toLowerCase()
+    const arg = (e.args ?? '').trim().toLowerCase()
     if (arg === 'off' || arg === 'on') {
       await $.store.set('autoOpen', arg === 'on')
       return { text: arg === 'off' ? 'The pane will no longer open by itself. /ruthless-pane still opens it.' : 'The pane will open by itself again.' }
     }
+    if (arg) return { text: 'Usage: /ruthless-pane (open it now) · /ruthless-pane off · /ruthless-pane on' }
     try {
       const r: any = await $.ui.open({ id: PANE, title: TITLE })
-      return { text: r?.isPlaced === false ? 'Not enough room to dock the pane. Widen the terminal (about 144 columns) and it will appear.' : 'Ruthless Claude pane opened.' }
+      return { text: r?.isPlaced === false ? 'Not enough room to dock the pane. Widen the terminal (about 144 columns) and run /ruthless-pane again.' : 'Ruthless Claude pane opened.' }
     } catch {
       return { text: 'Could not open the Ruthless Claude pane here.' }
     }
