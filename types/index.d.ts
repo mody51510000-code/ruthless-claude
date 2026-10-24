@@ -1,4 +1,4 @@
-export type Mode = 'idle' | 'typing' | 'squeeze'
+export type Mode = 'idle' | 'typing' | 'squeeze' | 'press'
 
 declare module 'claude-code' {
   interface PluginState {
