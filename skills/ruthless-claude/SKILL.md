@@ -69,8 +69,17 @@ Pass it the user's original request and the current draft (in review mode, the p
 spawning is not possible, or the task is trivial (a greeting, a one-line answer), do the same critique
 yourself, as harshly as the role demands, testing code the same way.
 
+**Fast mode** (only when the request contains `--fast`, or ends with "بسرعة" / "بسرعه" as a separate
+instruction addressed to you, not as part of the task like "a program that runs fast"): spawn **three**
+reviewers in the same message, so they run at the same time, each with the role above plus one focus:
+1. correctness and tests, 2. edge cases, bad input and safety, 3. speed, clarity, and whether it really
+solves what the user asked. Merge their findings (drop duplicates); the round's score is the **lowest** of
+the three. More found per round means fewer rounds: it finishes sooner but costs roughly 2-3× the tokens
+per round. Mention this cost once in the squeeze log.
+
 **Report progress:** after each review, if the tool `mcp__ruthless-claude__progress` is available, call it
-with `round` (1-4) and the reviewer's `score`. It only updates the side pane; skip it if it is missing.
+with `round` (1-4), the reviewer's `score`, and `fast: true` in fast mode. It only updates the side pane;
+skip it if it is missing.
 
 Then base Claude fixes **every** point raised and produces the next draft. Fix every [verified] failure
 first, and keep the reviewer's tests: in the next round the reviewer reruns them on the new draft, so
