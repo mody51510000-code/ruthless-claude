@@ -1,0 +1,5 @@
+{
+  "name": "ruthless-claude",
+  "owner": { "name": "mody51510000-code" },
+  "plugins": [{ "name": "ruthless-claude", "source": "./" }]
+}

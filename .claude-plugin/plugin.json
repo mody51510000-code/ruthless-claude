@@ -1,0 +1,9 @@
+{
+  "name": "ruthless-claude",
+  "version": "0.1.0",
+  "description": "Ruthless Claude: a pitch-black Claude that squeezes normal Claude through review rounds for the best result, plus a pixel-art side pane.",
+  "author": { "name": "mody51510000-code" },
+  "license": "MIT",
+  "repository": "https://github.com/mody51510000-code/ruthless-claude",
+  "types": "./types/index.d.ts"
+}
