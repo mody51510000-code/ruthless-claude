@@ -159,7 +159,7 @@ Saying **"Ruthless Claude"**, **"ruthless mode"** or **"squeeze it"** in a promp
 
 ## Cost & limits
 
-- **Tokens:** every round adds a review and a rewrite, so a run costs several times a normal answer (rough estimate: 2–5×, depending on how many rounds run). To keep that down, the reviewer from round 1 stays on: later rounds send it only what changed and it reruns its saved tests, instead of a new reviewer reading everything again. It also skips cache and binary files and keeps findings short.
+- **Tokens:** every round adds a review and a rewrite, so a run costs several times a normal answer (rough estimate: 2–5×, depending on how many rounds run). To keep that down, the reviewer from round 1 stays on: later rounds send it only what changed and it reruns its saved tests, instead of a new reviewer reading everything again. It also skips cache and binary files and keeps findings short. Because a reviewer that stays on can go easy on its own requests, a run of 2+ rounds that reaches 9/10 ends with a **final check**: one new reviewer (same model, never a cheaper one) looks at the changed files with fresh eyes and reruns the tests.
 - **Waiting:** you see nothing until the last round is done, so long tasks take a while to come back.
 - **When to use it:** code, scripts that change files, and anything where a mistake is costly. For quick questions, plain Claude is faster and cheaper.
 - **Same model:** the reviewer is another copy of Claude, so both can miss the same mistake. It catches a lot, not everything.
