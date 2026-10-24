@@ -15,7 +15,7 @@ A pitch-black persona with angry white eyes grabs Claude's draft and squeezes it
 
 <sub>Unofficial community plugin. Not made by or affiliated with Anthropic.</sub>
 
-[Install](#install) · [How it works](#how-it-works) · [Review mode](#review-mode) · [Compare mode](#compare-mode) · [Side pane](#the-side-pane) · [Commands](#commands) · [Cost & limits](#cost--limits)
+[Install](#install) · [How it works](#how-it-works) · [Review mode](#review-mode) · [Fast mode](#fast-mode) · [Compare mode](#compare-mode) · [Side pane](#the-side-pane) · [Commands](#commands) · [Cost & limits](#cost--limits)
 
 </div>
 
@@ -96,6 +96,16 @@ Already have code? Squeeze it instead of writing something new:
 
 Round 1 is your existing work, so the first draft step is skipped. Fixes are made as normal edits that you approve one by one. Add `review only` (or "بس راجع") to get the findings and the score without any edits.
 
+## Fast mode
+
+Short on time, not on tokens? Add `--fast` (or end your request with "بسرعة"):
+
+```
+/ruthless-claude write a function that parses relative dates --fast
+```
+
+Each round sends **three reviewers at the same time**, each hunting something different: correctness and tests, edge cases and safety, speed and clarity. They find more per round, so it usually finishes in fewer rounds. The round's score is the lowest of the three. Each round costs roughly 2–3× the tokens, and the side pane swaps the squeeze for a press machine.
+
 ## Compare mode
 
 Want to see what the squeezing actually changed? Add `--compare`:
@@ -118,9 +128,12 @@ A small pixel-art pane next to the chat shows what's happening:
 
 <table>
 <tr>
-<td align="center" width="33%"><img src="assets/idle.gif" alt="Idle"><br><b>Idle</b><br><sub>standing and breathing, now and then a glance</sub></td>
-<td align="center" width="33%"><img src="assets/typing.gif" alt="Claude working"><br><b>Claude working</b><br><sub>Claude types at his computer</sub></td>
-<td align="center" width="33%"><img src="assets/squeeze.gif" alt="Ruthless Claude squeezing"><br><b>Ruthless Claude active</b><br><sub>grabs Claude and squeezes out the best result</sub></td>
+<td align="center" width="50%"><img src="assets/idle.gif" alt="Idle"><br><b>Idle</b><br><sub>standing and breathing, now and then a glance</sub></td>
+<td align="center" width="50%"><img src="assets/typing.gif" alt="Claude working"><br><b>Claude working</b><br><sub>Claude types at his computer</sub></td>
+</tr>
+<tr>
+<td align="center" width="50%"><img src="assets/squeeze.gif" alt="Ruthless Claude squeezing"><br><b>Ruthless Claude active</b><br><sub>grabs Claude and squeezes out the best result</sub></td>
+<td align="center" width="50%"><img src="assets/press.gif" alt="Fast mode press machine"><br><b>Fast mode</b><br><sub>drops a press machine on Claude and cranks it hard</sub></td>
 </tr>
 </table>
 
@@ -134,6 +147,7 @@ The pane opens by itself at session start when your terminal is wide enough for 
 | --- | --- |
 | `/ruthless-claude <task>` | Squeeze the task through review rounds until it scores 9/10 (max 4) |
 | `/ruthless-claude <task> --compare` | Same, plus the first draft vs the final one |
+| `/ruthless-claude <task> --fast` | 3 reviewers per round at once: fewer rounds, more tokens |
 | `/ruthless-claude review [path]` | Squeeze existing code: a file, a folder, or your uncommitted changes |
 | `/ruthless-pane` | Open the side pane |
 | `/ruthless-pane off` / `on` | Stop / resume opening the pane by itself |
@@ -156,7 +170,7 @@ Ruthless Claude replies in the language you write in.
 
 <div dir="rtl">
 
-**بالعربي:** اكتب طلبك بالعربي وبيرد عليك بالعربي. تقدر تقول "كلود القاسي" أو "اعصره"، واكتب "قارن" في آخر الطلب بدل `--compare`. ولمراجعة كود موجود اكتب "راجع" (مثلاً: `/ruthless-claude راجع آخر تعديلاتي`).
+**بالعربي:** اكتب طلبك بالعربي وبيرد عليك بالعربي. تقدر تقول "كلود القاسي" أو "اعصره"، واكتب "قارن" في آخر الطلب بدل `--compare`، و"بسرعة" بدل `--fast`. ولمراجعة كود موجود اكتب "راجع" (مثلاً: `/ruthless-claude راجع آخر تعديلاتي`).
 
 </div>
 
