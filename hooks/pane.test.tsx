@@ -129,8 +129,48 @@ test('fast mode plays the press machine, and only for a real fast request', asyn
   expect(pixels('press', 15)).not.toEqual(pixels('press', 17))
 })
 
+test("a 9+ first round plays Claude's revenge; later rounds and lower scores don't", async ($, on) => {
+  const modes: string[] = []
+  on('command.register', () => ({ value: { command: 'x' } }))
+  on('tool.register', (_, e: any) => ({ value: { tool: 'mcp__ruthless-claude__' + e.name } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('store.get', () => ({ value: true }))
+  on('state.set', (_, e: any) => { modes.push(e.value?.value ?? e.value); return { value: { isSet: true } } })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const last = () => modes[modes.length - 1]
+
+  // a low first round, then 9 in round 2: that's a normal squeeze, not a revenge
+  await $.tool.call({ tool: 'mcp__ruthless-claude__progress', round: 1, score: 6 } as any)
+  expect(last()).toBe('squeeze')
+  await $.tool.call({ tool: 'mcp__ruthless-claude__progress', round: 2, score: 9 } as any)
+  expect(last()).toBe('squeeze')
+
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const r: any = await $.tool.call({ tool: 'mcp__ruthless-claude__progress', round: 1, score: 9 } as any)
+  expect(last()).toBe('revenge')
+  expect(String(r.result)).toContain('revenge')
+
+  // fast mode breaks out of the press instead
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.tool.call({ tool: 'mcp__ruthless-claude__progress', round: 1, score: 9.5, fast: true } as any)
+  expect(last()).toBe('breakout')
+})
+
+test('the revenge scenes move, and end on Claude standing with the gem', () => {
+  for (const m of ['revenge', 'breakout'] as const) {
+    expect(pixels(m, 0)).not.toEqual(pixels(m, 8)) // he gets angry
+    expect(pixels(m, 10)).not.toEqual(pixels(m, 14)) // the break-out
+    // at the end the gem (gold) floats over his head
+    const end = pixels(m, 60)
+    expect(Array.from(end).includes(0xffd54a)).toBe(true)
+  }
+  // the HUD shows in the revenge too
+  expect(pixels('revenge', 30, { round: 1, score: 9 })).not.toEqual(pixels('revenge', 30))
+})
+
 test('every frame of every scene encodes to the right size', () => {
-  for (const m of ['idle', 'typing', 'squeeze', 'press'] as const) {
+  for (const m of ['idle', 'typing', 'squeeze', 'press', 'revenge', 'breakout'] as const) {
     for (let f = 0; f < 120; f++) {
       expect(pixels(m, f).length).toBe(W * H)
       for (const cols of [20, 33, W]) {

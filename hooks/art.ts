@@ -1,7 +1,7 @@
 // Pixel art for the Ruthless Claude pane. Pure functions: no engine calls.
 // Each terminal cell shows two square pixels stacked ('▀': fg = top, bg = bottom).
 
-export type Mode = 'idle' | 'typing' | 'squeeze' | 'press'
+export type Mode = 'idle' | 'typing' | 'squeeze' | 'press' | 'revenge' | 'breakout'
 
 export const W = 40 // pixels wide (= columns), small enough for a narrow pane
 export const H = 28 // pixels tall (= 14 rows)
@@ -446,6 +446,170 @@ function pressScene(b: Buf, f: number) {
   }
 }
 
+// ============ Claude's revenge (round 1 already scored 9+) ============
+const ANGER = 0xe5534b
+// a small red cross by his head: he's had enough
+function angerMark(b: Buf, x: number, y: number) {
+  px(b, x, y, ANGER); px(b, x + 2, y, ANGER); px(b, x + 1, y + 1, ANGER); px(b, x, y + 2, ANGER); px(b, x + 2, y + 2, ANGER)
+}
+function drawGem(b: Buf, gx: number, gy: number, sparkle: boolean) {
+  if (sparkle) { px(b, gx - 1, gy + 1, GLOW); px(b, gx + 5, gy + 1, GLOW); px(b, gx + 2, gy - 1, GLOW) }
+  GEM.forEach((row, j) => [...row].forEach((c2, i) => {
+    if (c2 === '.') return
+    px(b, gx + i, gy + j, c2 === 'W' ? 0xffffff : c2 === 'D' ? GOLD_D : GOLD)
+  }))
+}
+function burst(b: Buf, x: number, y: number, t: number) {
+  const r = 1 + t * 2
+  for (let a = 0; a < 8; a++) {
+    const ang = (a / 8) * Math.PI * 2
+    px(b, x + Math.cos(ang) * r, y + Math.sin(ang) * r, a % 2 ? GOLD : 0xffffff)
+  }
+}
+// Claude standing proud with his gem: the result nobody had to squeeze out of him
+function proud(b: Buf, x: number, f: number) {
+  const base: Char = { x, y: FLOOR - 11, w: 13, h: 10, pal: CLAUDE, eyes: f % 37 < 2 ? 'blink' : 'open' }
+  shadow(b, x, 13)
+  drawChar(b, breathe(base, f))
+  drawGem(b, x + 4, 7 + (Math.floor(f / 5) % 2), Math.floor(f / 3) % 2 === 0)
+}
+
+// from the squeeze: Ruthless still has him by the waist, but Claude gets angry, puffs up,
+// breaks the grip and shoves him off the stage. Later Ruthless peeks back in, still mad.
+function revengeScene(b: Buf, f: number) {
+  const cupX = 33
+  rect(b, cupX, 21, 1, 5, GLASS); rect(b, cupX + 4, 21, 1, 5, GLASS); rect(b, cupX, 25, 5, 1, GLASS)
+  rect(b, cupX + 1, 24, 3, 1, JUICE) // barely anything came out of him
+
+  if (f < 10) { // the grip, as the squeeze left it
+    const shake = f >= 4 && f % 2 === 0 ? 1 : 0
+    const puff = f >= 6 ? 1 : 0
+    const cx = 19 + shake, cw = 13, cy = 12
+    shadow(b, 3, 16); shadow(b, 20, 10)
+    const rEdge = 16
+    rect(b, rEdge, GRIP_Y - 1, cx + cw + 3 - rEdge, 3, RUTHLESS.D) // far arm, behind Claude
+    drawChar(b, { x: cx, y: cy, w: cw, h: 10, pal: CLAUDE, eyes: f < 3 ? 'squint' : f < 5 ? 'open' : 'angry', brow: f >= 8 ? 2 : 1, bulge: puff, arms: false })
+    drawChar(b, { x: 3, y: FLOOR - 11, w: 13, h: 10, pal: RUTHLESS, eyes: f >= 6 ? 'bulge' : 'mad', brow: 1, look: 2, arms: false })
+    if (cx - 2 > rEdge) rect(b, rEdge, GRIP_Y - 1, cx - 2 - rEdge, 3, RUTHLESS.arm) // near arm
+    rect(b, cx - 2 - puff, GRIP_Y - 1, 3, 3, RUTHLESS.L) // fists pushed apart as he puffs up
+    rect(b, cx + cw - 1 + puff, GRIP_Y - 1, 3, 3, RUTHLESS.B)
+    if (f >= 5) angerMark(b, cx + cw - 1, cy - 3)
+    return
+  }
+
+  const t = f - 10
+  // Ruthless is knocked off to the left with a little hop, kicking up dust
+  const rx = 3 - (t + 1) * 3
+  if (rx > -14) {
+    const hop = t < 3 ? [1, 2, 1][t] : 0
+    shadow(b, rx, 14)
+    drawChar(b, { x: rx, y: FLOOR - 11 - hop, w: 13, h: 10, pal: RUTHLESS, eyes: 'bulge', look: -1, arms: false })
+    if (t >= 1) { px(b, rx + 14 + (t % 2), 24, 0x8b8b8b); px(b, rx + 16, 25, 0x6b6b6b); px(b, rx + 18 - (t % 2), 23, 0x6b6b6b) }
+  }
+  // Ruthless peeks back in from the edge, glaring
+  if (f >= 34) drawChar(b, { x: -6, y: FLOOR - 11, w: 13, h: 10, pal: RUTHLESS, eyes: f % 53 < 2 ? 'blink' : 'mad', brow: 2, look: 2, arms: false })
+
+  if (t >= 10) { proud(b, 14, f); return }
+
+  // Claude drops to the floor and lunges into the shove, then steps back to the middle
+  const cx = t < 3 ? 19 - t : t < 8 ? 16 : 16 - (t - 7)
+  const cy = t === 0 ? FLOOR - 12 : FLOOR - 11
+  const pushing = t < 6
+  shadow(b, cx, 13)
+  drawChar(b, { x: cx, y: cy, w: 13, h: 10, pal: CLAUDE, eyes: t < 8 ? 'angry' : 'open', brow: 2, arms: !pushing })
+  if (pushing) {
+    const ay = cy + 4
+    rect(b, cx - 4, ay, 4, 2, CLAUDE.arm) // the shoving arm
+    rect(b, cx - 6, ay - 1, 2, 4, CLAUDE.L) // open palm
+    rect(b, cx + 13, ay, 2, 2, CLAUDE.arm) // the other arm stays at his side
+  }
+  if (t < 3) burst(b, cx - 7, cy + 5, t)
+}
+
+// from the press (fast mode): Claude gets angry under the plate, pushes it back up, and the
+// whole machine bursts apart. He jumps out; Ruthless falls on his backside and the wheel rolls off.
+type Piece = { x: number; y: number; w: number; h: number; vx: number; vy: number; c: number }
+const DEBRIS: Piece[] = [
+  { x: 16, y: 5, w: 10, h: 2, vx: -2.6, vy: -2.2, c: STEEL }, // top beam, two halves
+  { x: 26, y: 5, w: 10, h: 2, vx: 2.6, vy: -2.4, c: STEEL_L },
+  { x: 19, y: 8, w: 7, h: 2, vx: -1.8, vy: -3.0, c: STEEL_D }, // the plate, split
+  { x: 26, y: 8, w: 7, h: 2, vx: 1.8, vy: -2.8, c: STEEL_D },
+  { x: 17, y: 7, w: 2, h: 6, vx: -0.5, vy: -1.2, c: STEEL_L }, // tops of the posts
+  { x: 33, y: 7, w: 2, h: 6, vx: 1.5, vy: -1.4, c: STEEL_L },
+  { x: 25, y: 7, w: 2, h: 2, vx: -0.3, vy: -3.4, c: STEEL_D }, // a chunk of the screw rod
+]
+const GRAV = 0.5
+function piece(b: Buf, p: Piece, t: number) {
+  const thin = Math.min(p.w, p.h), long = Math.max(p.w, p.h)
+  const rest = FLOOR - thin + 1
+  const land = (-p.vy + Math.sqrt(p.vy * p.vy + 2 * GRAV * (rest - p.y))) / GRAV // when it hits the floor
+  const tt = Math.min(t, land)
+  const x = p.x + p.vx * tt
+  if (t >= land) rect(b, x, rest, long, thin, p.c) // lies flat once it lands
+  else rect(b, x, p.y + p.vy * tt + 0.5 * GRAV * tt * tt, p.w, p.h, p.c)
+}
+function breakoutScene(b: Buf, f: number) {
+  const cupX = 35
+  rect(b, cupX, 22, 1, 4, GLASS); rect(b, cupX + 4, 22, 1, 4, GLASS); rect(b, cupX, 25, 5, 1, GLASS)
+  rect(b, cupX + 1, 24, 3, 1, JUICE)
+  rect(b, 35, 21, 3, 1, STEEL) // pipe
+
+  if (f < 10) { // still under the plate, pushing it back up
+    const d = f < 5 ? 6 : 10 - f // plate drop: 6 → 1
+    const tremble = f >= 3 && f % 2 ? 1 : 0
+    shadow(b, 15, 22)
+    const top = Math.max(11, 10 + d)
+    const flat = top - 11
+    drawChar(b, {
+      x: 20 - (flat >= 3 ? 1 : 0) + tremble, y: top, w: flat >= 3 ? 14 : 12, h: 20 - top + 1, pal: CLAUDE,
+      eyes: f < 4 ? 'squint' : 'angry', brow: f >= 7 ? 2 : 1, arms: false, legs: false,
+    })
+    rect(b, 17, 5, 2, 21, STEEL); rect(b, 17, 5, 1, 21, STEEL_L)
+    rect(b, 33, 5, 2, 21, STEEL); rect(b, 34, 5, 1, 21, STEEL_D)
+    rect(b, 16, 5, 20, 2, STEEL); rect(b, 16, 5, 20, 1, STEEL_L)
+    const plateTop = 7 + d
+    rect(b, 25, 7, 2, plateTop - 7, STEEL_D)
+    rect(b, 19 + tremble, plateTop, 14, 3, STEEL_D); rect(b, 19 + tremble, plateTop, 14, 1, STEEL_L)
+    rect(b, 17, 21, 18, 2, WOOD); rect(b, 17, 21, 18, 1, WOOD_L)
+    for (let a = 0; a < 32; a++) px(b, 14 + Math.cos(a * Math.PI / 16) * 3, 15 + Math.sin(a * Math.PI / 16) * 3, STEEL_L)
+    rect(b, 14, 13, 1, 5, STEEL); rect(b, 12, 15, 5, 1, STEEL); px(b, 14, 15, STEEL_D)
+    // Ruthless still on the crank, until he sees what's coming
+    drawChar(b, f < 5
+      ? { x: 0, y: 15, w: 13, h: 9, pal: RUTHLESS, eyes: 'mad', brow: 2, look: 2, arms: false }
+      : { x: 0, y: 14, w: 12, h: 10, pal: RUTHLESS, eyes: 'bulge', look: 2, arms: false })
+    rect(b, 12, 17, 2, 1, RUTHLESS.arm); rect(b, 13, 13, 1, 5, RUTHLESS.arm); rect(b, 13, 11, 3, 3, RUTHLESS.L)
+    if (f >= 4) angerMark(b, 31, top - 4)
+    return
+  }
+
+  const t = f - 10
+  rect(b, 16, 26, 8, 1, JUICE) // juice spilled on the floor
+  // what's left: two broken stumps and the tray
+  rect(b, 17, 19, 2, 7, STEEL); rect(b, 17, 19, 1, 7, STEEL_L); px(b, 18, 18, STEEL)
+  rect(b, 33, 19, 2, 7, STEEL); rect(b, 34, 19, 1, 7, STEEL_D); px(b, 33, 18, STEEL)
+  rect(b, 17, 21, 18, 2, WOOD); rect(b, 17, 21, 18, 1, WOOD_L)
+
+  // Ruthless is thrown back and lands sitting, then glares
+  if (t < 4) drawChar(b, { x: -t, y: FLOOR - 11, w: 12, h: 10, pal: RUTHLESS, eyes: 'bulge', look: 2, arms: false })
+  else {
+    shadow(b, -2, 13)
+    drawChar(b, { x: -2, y: FLOOR - 9, w: 13, h: 8, pal: RUTHLESS, eyes: t < 14 ? 'bulge' : f % 53 < 2 ? 'blink' : 'mad', brow: 2, look: 2 })
+  }
+
+  // the crank wheel drops off and rolls away to the left
+  const wx = 14 - t * 0.8, wy = Math.min(22, 15 + 0.5 * t * t), spin = -t * 0.8
+  for (let a = 0; a < 32; a++) px(b, wx + Math.cos(a * Math.PI / 16) * 3, wy + Math.sin(a * Math.PI / 16) * 3, STEEL_L)
+  for (const s of [0, Math.PI / 2]) for (let r = -2; r <= 2; r++) px(b, wx + Math.cos(spin + s) * r, wy + Math.sin(spin + s) * r, STEEL)
+
+  for (const p of DEBRIS) piece(b, p, t)
+  if (t < 3) burst(b, 26, 11, t)
+
+  if (t >= 8) { proud(b, 22, f); if (t < 11) for (const k of [0, 12]) px(b, 22 + k + (t - 8) * (k ? 1 : -1), 25, 0x8b8b8b); return }
+  // Claude jumps out of the wreck, an arc down to the floor
+  const u = t / 8
+  drawChar(b, { x: Math.round(19 + 3 * u), y: Math.round(11 + 3 * u - 9 * Math.sin(Math.PI * u)), w: 13, h: 10, pal: CLAUDE, eyes: 'angry', brow: 2 })
+}
+
 // ============ encode to Raster cells ============
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 function toBase64(bytes: Uint8Array): string {
@@ -506,9 +670,11 @@ export function pixels(m: Mode, f: number, hud?: Hud): Int32Array {
   const b = newBuf()
   if (m === 'squeeze') squeezeScene(b, f)
   else if (m === 'press') pressScene(b, f)
+  else if (m === 'revenge') revengeScene(b, f)
+  else if (m === 'breakout') breakoutScene(b, f)
   else if (m === 'typing') typingScene(b, f)
   else idleScene(b, f)
-  if ((m === 'squeeze' || m === 'press') && hud && hud.round > 0) drawHud(b, hud)
+  if (m !== 'idle' && m !== 'typing' && hud && hud.round > 0) drawHud(b, hud)
   return b
 }
 

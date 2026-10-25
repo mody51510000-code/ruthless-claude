@@ -26,11 +26,18 @@ const squeezeMode = (): Mode => (fastRun ? 'press' : 'squeeze')
 // the squeeze's progress, reported by the skill through the progress tool after each review
 const hud: Hud = { round: 0, score: 0 }
 const PROGRESS_TOOL = 'mcp__ruthless-claude__progress'
+// Claude's revenge: round 1 already scored 9+, so nothing needed squeezing.
+// It plays to the end even if the turn finishes first, then the pane goes back to idle.
+const REVENGE_SCORE = 9
+const REVENGE_HOLD = 80 // frames (8 s) the scene runs before it may give way to idle
+const isRevenge = (m: Mode) => m === 'revenge' || m === 'breakout'
+let idleAfterRevenge = false // the turn is over; go idle once the scene has played
 
 function startClock($: any) {
   if (timer) return
   timer = $.clock.every(100, () => {
     tick = (tick + 1) % 100000
+    if (idleAfterRevenge && sceneFrame() >= REVENGE_HOLD) void setMode($, 'idle').catch(() => {})
     if (!mountedCols) return
     void $.ui.blit({ requestId: PANE, key: STAGE, columns: mountedCols, rows: H / 2, cells: stage(curMode, sceneFrame(), mountedCols, hud) })
       .catch(() => { mountedCols = 0 }) // pane closed: stop drawing until it renders again
@@ -42,6 +49,7 @@ function stopClock() {
 }
 
 async function setMode($: any, m: Mode) {
+  if (!isRevenge(m)) idleAfterRevenge = false
   if (m !== curMode) {
     modeStart = tick
     if (m !== 'typing') { hud.round = 0; hud.score = 0 } // a fresh squeeze starts empty
@@ -126,10 +134,12 @@ export const register: Register = on => {
     const score = Math.max(0, Math.min(10, Number(e.score) || 0))
     ruthlessRun = true
     if (e.fast === true) fastRun = true
-    if (curMode !== squeezeMode()) await setMode($, squeezeMode())
+    const revenge = round === 1 && score >= REVENGE_SCORE
+    const next: Mode = revenge ? (fastRun ? 'breakout' : 'revenge') : squeezeMode()
+    if (curMode !== next && !isRevenge(curMode)) await setMode($, next)
     hud.round = round
     hud.score = score
-    return { result: `Pane updated: round ${round}, score ${score}/10.` }
+    return { result: `Pane updated: round ${round}, score ${score}/10.${revenge ? " Claude's revenge plays: the first draft needed no squeezing." : ''}` }
   })
 
   on('command.run', { command: 'ruthless-help' }, async () => ({ text: HELP.join('\n') }))
@@ -154,7 +164,7 @@ export const register: Register = on => {
 
   on('turn.start', async ($, e, next) => {
     if (e.agentId) activeAgents.add(e.agentId)
-    else await setMode($, ruthlessRun ? squeezeMode() : 'typing')
+    else if (!(isRevenge(curMode) && !idleAfterRevenge)) await setMode($, ruthlessRun ? squeezeMode() : 'typing') // never cut the revenge short mid-run
     return next(e)
   })
 
@@ -164,7 +174,8 @@ export const register: Register = on => {
     if (!e.agentId && activeAgents.size === 0) {
       ruthlessRun = false
       fastRun = false
-      await setMode($, 'idle')
+      if (isRevenge(curMode)) idleAfterRevenge = true // let it finish; the clock goes idle after
+      else await setMode($, 'idle')
     }
     return result
   })
