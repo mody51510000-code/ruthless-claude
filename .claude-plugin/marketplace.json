@@ -9,7 +9,7 @@
       "name": "ruthless-claude",
       "source": "./",
       "description": "A separate reviewer critiques and scores Claude's draft; Claude fixes every point until 9/10 (max 4 rounds). Plus an animated pixel-art side pane.",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "category": "productivity"
     }
   ]
