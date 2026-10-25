@@ -18,7 +18,7 @@ A pitch-black persona with angry white eyes grabs Claude's draft and squeezes it
 > [!IMPORTANT]
 > **It is slow on purpose.** Every round is a full review with real tests, so a run takes many times longer than a normal answer. Fixing a mid-size game took about **35–40 minutes and ~250k tokens**. Use it when you need to be sure your work has no mistakes, not for everyday questions.
 
-[Install](#install) · [How it works](#how-it-works) · [Review mode](#review-mode) · [Fast mode](#fast-mode) · [Compare mode](#compare-mode) · [Side pane](#the-side-pane) · [Commands](#commands) · [Cost & limits](#cost--limits)
+[Install](#install) · [How it works](#how-it-works) · [Review mode](#review-mode) · [Fast mode](#fast-mode) · [Compare mode](#compare-mode) · [Ruthless mode](#ruthless-mode) · [Side pane](#the-side-pane) · [Commands](#commands) · [Cost & limits](#cost--limits)
 
 </div>
 
@@ -125,6 +125,23 @@ At the end you get a **Normal Claude vs Ruthless Claude** section:
 
 If the first draft was already nearly as good, it says so plainly. Compare mode is **off by default** because it adds output tokens. Ending your request with "show the difference" also works. Words like "compare" inside the task itself ("compare two dates") don't turn it on.
 
+## Ruthless mode
+
+Want the whole terminal to be Ruthless Claude's own app? Turn on Ruthless mode:
+
+```
+/ruthless-mode        # on
+/ruthless-mode off    # back to normal Claude
+```
+
+While it's on:
+
+- **Everything you type is squeezed.** No need to write `/ruthless-claude` each time. Slash commands still run as usual.
+- **A bar above the prompt** (`▀▄▀  R U T H L E S S   C L A U D E`) has a button for each switch: `1` Squeeze a task, `2` Review code, `3` Fast, `4` Compare, `5` Pane, `6` Help, `x` Normal Claude.
+- **It looks like Ruthless Claude:** black and white, like the character. Your prompts read `▀▄▀ you ›`, Claude's replies get a white bar and a `▀▄▀ RUTHLESS` head, and the spinner says things like *Squeezing* and *Interrogating*.
+- **The terminal itself turns black and white:** background, text and cursor, through the standard terminal color codes (Windows Terminal, VS Code, iTerm2, kitty, GNOME Terminal and most others). Red errors and green/red diffs keep their colors. Your terminal gets its own colors back when you turn the mode off or quit Claude. The plugin also ships a **Ruthless** theme for Claude Code, picked automatically; if your version doesn't switch to it, choose it in `/theme`.
+- **It stays on** across sessions until you turn it off.
+
 ## The side pane
 
 A small pixel-art pane next to the chat shows what's happening:
@@ -161,6 +178,8 @@ The pane opens by itself at session start when your terminal is wide enough for 
 | `/ruthless-pane` | Open the side pane |
 | `/ruthless-pane off` / `on` | Stop / resume opening the pane by itself |
 | `/ruthless-help` | Show the guide and all commands |
+| `/ruthless-mode` | [Ruthless mode](#ruthless-mode): the terminal becomes Ruthless Claude's own app, and everything you type is squeezed |
+| `/ruthless-mode off` | Back to normal Claude (or press `Normal Claude` in the bar) |
 
 If another plugin also has a skill named `ruthless-claude`, use the full name `/ruthless-claude:ruthless-claude`.
 
@@ -184,6 +203,8 @@ Ruthless Claude replies in the language you write in.
 
 **بالعربي:** اكتب طلبك بالعربي وبيرد عليك بالعربي. تقدر تقول "كلود القاسي" أو "اعصره"، واكتب "قارن" في آخر الطلب بدل `--compare`، و"بسرعة" بدل `--fast`. ولمراجعة كود موجود اكتب "راجع" (مثلاً: `/ruthless-claude راجع آخر تعديلاتي`).
 
+**الوضع القاسي:** اكتب `/ruthless-mode` والطرفية كلها تصير تطبيق كلود القاسي، أسود وأبيض، وكل شي تكتبه ينعصر. و`/ruthless-mode off` يرجعك لكلود العادي.
+
 </div>
 
 ## Uninstall
@@ -204,8 +225,10 @@ To get a newer version, refresh the marketplace, then open `/plugin` and update 
 ```
 .claude-plugin/   plugin.json + marketplace.json
 skills/           the Ruthless Claude skill (the review loop)
-hooks/            the side pane: register.tsx (events), art.ts (pixel art), pane.test.tsx
-types/            state types for the pane
+hooks/            the side pane and Ruthless mode: register.tsx (events), art.ts (pixel art), pane.test.tsx
+types/            state types for the pane and Ruthless mode
+themes/           the Ruthless theme for Claude Code
+scripts/          terminal-colors.js: paints the terminal black and white in Ruthless mode
 assets/           images for this README
 ```
 
@@ -213,7 +236,7 @@ Clone the repo, then:
 
 ```bash
 claude plugin validate .   # check the manifest and hooks module
-claude plugin test .       # run the pane tests
+claude plugin test .       # run the pane and Ruthless mode tests
 claude --plugin-dir .      # start a session with your local copy loaded
 ```
 
