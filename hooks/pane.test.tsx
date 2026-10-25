@@ -53,6 +53,63 @@ test('the guide prints once after install, and /ruthless-help shows it any time'
   expect(r.text).toContain('--compare')
 })
 
+test('Ruthless mode sends plain prompts to Ruthless Claude, and /ruthless-mode off goes back', async ($, on) => {
+  const sent: string[] = []
+  const store: Record<string, unknown> = { welcomed: true }
+  on('command.register', () => ({ value: { command: 'x' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.status', () => ({ value: undefined }))
+  on('store.get', (_, e: any) => ({ value: store[e.key] }))
+  on('store.set', (_, e: any) => { store[e.key] = e.value; return { value: undefined } })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('prompt.submit', (_, e: any) => { sent.push(e.text); return { text: e.text } })
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+
+  await $.command.run({ command: 'ruthless-mode', args: '' } as any)
+  expect((store.console as any).on).toBe(true)
+  await $.prompt.submit({ text: 'fix the sort' } as any)
+  await $.prompt.submit({ text: '/ruthless-help' } as any) // slash commands pass untouched
+  expect(sent[0]).toBe('/ruthless-claude fix the sort')
+  expect(sent[1]).toBe('/ruthless-help')
+
+  await $.command.run({ command: 'ruthless-mode', args: 'off' } as any)
+  await $.prompt.submit({ text: 'just a question' } as any)
+  expect(sent[2]).toBe('just a question')
+  expect((store.console as any).on).toBe(false)
+})
+
+test('in Ruthless mode the transcript is dressed as Ruthless Claude, and goes back after', async ($, on) => {
+  const store: Record<string, unknown> = { welcomed: true }
+  on('command.register', () => ({ value: { command: 'x' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.status', () => ({ value: undefined }))
+  on('store.get', (_, e: any) => ({ value: store[e.key] }))
+  on('store.set', (_, e: any) => { store[e.key] = e.value; return { value: undefined } })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  let engineDrew = 0
+  on('ui.render', ($, e: any) => { engineDrew++; const { Text } = $.ui.resolve(e); return <Text>engine</Text> })
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const reply ={ plugin: 'ruthless-claude', component: 'AssistantMessage', requestId: 'm1', surface: 'terminal', props: { text: '**done**', isFirstOfReply: true } } as any
+  const typed = { plugin: 'ruthless-claude', component: 'UserMessage', requestId: 'u1', surface: 'terminal', props: { text: '/ruthless-claude fix the sort --fast', origin: { kind: 'composer' }, isExpanded: false } } as any
+
+  await $.command.run({ command: 'ruthless-mode', args: '' } as any)
+  let ui = await $.ui.mount(reply)
+  expect(await ui.find({ type: 'Markdown' })).toBeTruthy()
+  expect(JSON.stringify(await ui.find({ type: 'Text' }))).toContain('RUTHLESS')
+  await ui.unmount()
+  ui = await $.ui.mount(typed)
+  const words = JSON.stringify(await ui.findAll({ type: 'Text' }))
+  expect(words).toContain('fix the sort')
+  expect(words.includes('--fast')).toBe(false)
+  await ui.unmount()
+
+  // off: the plugin hands the drawing back to the engine
+  await $.command.run({ command: 'ruthless-mode', args: 'off' } as any)
+  ui = await $.ui.mount(reply)
+  expect(engineDrew).toBe(1)
+  await ui.unmount()
+})
+
 test('a headless session gets no guide and no pane', async ($, on) => {
   const logs: string[] = []
   let opened = false
