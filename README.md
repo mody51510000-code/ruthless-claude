@@ -140,6 +140,8 @@ A small pixel-art pane next to the chat shows what's happening:
 </tr>
 </table>
 
+**Claude's revenge:** if the first review already scores **9/10 or more**, there's nothing to squeeze, and Claude fights back. In a normal run he puffs up, breaks the grip and shoves Ruthless Claude off the stage. In fast mode he pushes the plate back up, the press machine bursts apart, and he jumps out while Ruthless Claude lands on his backside. Either way Claude ends up standing with the gold gem over his head, and the closing line admits there was nothing to squeeze.
+
 While squeezing, the top of the pane tracks the run: one square per round (up to 4) and a 10-segment score bar that turns red, yellow, then green as the score climbs.
 
 The pane opens by itself at session start when your terminal is wide enough for Claude Code to dock it beside the chat (about 144 columns). In a narrower terminal it may not dock: run `/ruthless-pane` and it tells you whether there was room. Don't want it? `/ruthless-pane off` stops the auto-open (`/ruthless-pane on` brings it back). It never opens in headless runs (`claude -p`, SDK).
