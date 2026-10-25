@@ -138,6 +138,10 @@ A small pixel-art pane next to the chat shows what's happening:
 <td align="center" width="50%"><img src="assets/squeeze.gif" alt="Ruthless Claude squeezing"><br><b>Ruthless Claude active</b><br><sub>grabs Claude and squeezes out the best result</sub></td>
 <td align="center" width="50%"><img src="assets/press.gif" alt="Fast mode press machine"><br><b>Fast mode</b><br><sub>drops a press machine on Claude and cranks it hard</sub></td>
 </tr>
+<tr>
+<td align="center" width="50%"><img src="assets/revenge.gif" alt="Claude's revenge"><br><b>Claude's revenge</b><br><sub>the first draft scored 9+: Claude breaks free and shoves him off</sub></td>
+<td align="center" width="50%"><img src="assets/breakout.gif" alt="Claude breaks the press"><br><b>Revenge in fast mode</b><br><sub>Claude bursts the press apart and jumps out</sub></td>
+</tr>
 </table>
 
 **Claude's revenge:** if the first review already scores **9/10 or more**, there's nothing to squeeze, and Claude fights back. In a normal run he puffs up, breaks the grip and shoves Ruthless Claude off the stage. In fast mode he pushes the plate back up, the press machine bursts apart, and he jumps out while Ruthless Claude lands on his backside. Either way Claude ends up standing with the gold gem over his head, and the closing line admits there was nothing to squeeze.
