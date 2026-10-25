@@ -94,7 +94,8 @@ reviewers the same way (each gets only the changes).
 
 **Report progress:** after each review, if the tool `mcp__ruthless-claude__progress` is available, call it
 with `round` (1-4), the reviewer's `score`, and `fast: true` in fast mode. It only updates the side pane;
-skip it if it is missing.
+skip it if it is missing. Report the score honestly: a round-1 score of 9+ plays "Claude's revenge" in the
+pane (Claude breaks free and shoves Ruthless away), so never round a score up to get it.
 
 Then base Claude fixes **every** point raised and produces the next draft. Fix every [verified] failure
 first, and keep the reviewer's tests: in the next round the reviewer reruns them on the new draft, so
@@ -131,6 +132,13 @@ Show the user:
    For code, add how many of the reviewer's tests pass in the final version (e.g. "12/12 tests pass").
 3. One closing line from Ruthless Claude, cold and short, with N = the number of fix passes that
    actually happened (English: "Squeezed him N times. That's all he had." / Arabic: "عصرته N مرات. هذا أفضل ما عنده.").
+
+   **Claude's revenge:** if Round 1 already scored 9+ (no fix pass happened), Ruthless lost this one. Replace
+   the closing line with a grudging one, N = the Round 1 score (English: "Claude's revenge: his first draft
+   scored N/10. Nothing to squeeze... this time." / Arabic: "انتقام كلود: أول نسخة له أخذت N/10. ما لقيت شي
+   أعصره... هالمرة."). In review mode the work is the user's, so say it about their work instead (English:
+   "Your work scored N/10 on the first pass. Nothing to squeeze... this time." / Arabic: "شغلك أخذ N/10 من أول
+   جولة. ما لقيت شي أعصره... هالمرة.").
 
 Scores are the reviewer's judgment, not a test result: never present them as objective.
 
