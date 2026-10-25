@@ -162,6 +162,17 @@ after the squeeze log and before the closing line, add a section titled
 
 If Round 1 already scored 9+ (no squeeze happened), say there is no difference to show and skip the rest.
 
+## Optional — Notebook Memory
+
+Only when the tools `mcp__notebook-memory__search` and `mcp__notebook-memory__note` are available (the
+separate Notebook Memory plugin is installed); otherwise skip this section.
+
+- **Before Round 1:** search for past findings on the same files or task (a few keywords: file names, the
+  feature). Pass any real hits to the reviewer as "found in earlier reviews of this project", so it checks
+  whether they came back. Don't pass anything unrelated.
+- **After Step 3:** save one short note with `mcp__notebook-memory__note`: the task, the final score, and the
+  problems the squeeze fixed (one line each, no code). Skip it for a trivial task.
+
 ## Rules
 
 - Talk to the user in their language.
